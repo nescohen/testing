@@ -1932,7 +1932,6 @@ static ACVP_RESULT acvp_build_login(ACVP_CTX *ctx, char **login, int *login_len,
 
 err:
     *login = json_serialize_to_string(reg_arry_val, login_len);
-    if (token) free(token);
     if (reg_arry_val) json_value_free(reg_arry_val);
     return rv;
 }
