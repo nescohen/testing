@@ -224,6 +224,19 @@ typedef CURL_TYPEOF_CURL_OFF_T curl_off_t;
 #define CURLOPTTYPE_FUNCTIONPOINT 20000
 #define CURLOPTTYPE_OFF_T         30000
 
+enum {
+  CURL_SSLVERSION_DEFAULT,
+  CURL_SSLVERSION_TLSv1, /* TLS 1.x */
+  CURL_SSLVERSION_SSLv2,
+  CURL_SSLVERSION_SSLv3,
+  CURL_SSLVERSION_TLSv1_0,
+  CURL_SSLVERSION_TLSv1_1,
+  CURL_SSLVERSION_TLSv1_2,
+  CURL_SSLVERSION_TLSv1_3,
+
+  CURL_SSLVERSION_LAST /* never use, keep last */
+};
+
 /* name is uppercase CURLOPT_<name>,
    type is one of the defined CURLOPTTYPE_<type>
    number is unique identifier */
@@ -260,6 +273,10 @@ typedef enum {
     /* send FILE * or void * to store headers to, if you use a callback it
        is simply passed to the callback unmodified */
     CINIT(HEADERDATA, OBJECTPOINT, 29),
+
+    /* What version to specifically try to use.
+       See CURL_SSLVERSION defines below. */
+    CINIT(SSLVERSION, LONG, 32),
 
     CINIT(CUSTOMREQUEST, OBJECTPOINT, 36),
 
@@ -387,6 +404,8 @@ struct curl_certinfo {
    CURLINFO_HTTP_CODE */
 #define CURLINFO_HTTP_CODE CURLINFO_RESPONSE_CODE
 
+void curl_free(void *p);
+
 CURL_EXTERN CURL *curl_easy_init(void);
 CURL_EXTERN CURLcode curl_easy_setopt(CURL *curl, CURLoption option, ...);
 CURL_EXTERN CURLcode curl_easy_perform(CURL *curl);
@@ -401,7 +420,6 @@ typedef size_t (*curl_write_callback)(char *buffer,
                                       size_t size,
                                       size_t nitems,
                                       void *outstream);
-
 
 #ifdef  __cplusplus
 }

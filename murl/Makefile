@@ -1,13 +1,10 @@
-CC = gcc
+CC= $(CROSS_COMPILE)gcc
 CFLAGS+=-I. -I.. -g -O0 -fPIC -Wall
 LDFLAGS+=
 INCDIRS+=
 
-SOURCES=http_parser.c murl.c murl_http.c 
+SOURCES=http_parser.c murl.c murl_http.c murl_cli.c
 OBJECTS=$(SOURCES:.c=.o)
-
-TEST_SOURCES=test/ut_main.c test/ut_tls.c test/ut_get.c test/ut_post.c test/ut_util.c ../src/parson.c
-TEST_OBJECTS=$(TEST_SOURCES:.c=.o)
 
 all: murl test libmurl.a libmurl.so
 
@@ -30,6 +27,7 @@ test:	$(TEST_OBJECTS) libmurl.so
 
 clean:
 	rm -f *.[ao]
+	rm -f test/*.[ao]
 	rm -f libmurl.so.1.0.0
 	rm -f libmurl.so
 	rm -f murl

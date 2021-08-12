@@ -1,124 +1,125 @@
-/** @file
- *  This is the private header file to be included by CiscoSSL
- *  using libacvp.
+/*
+ * Copyright (c) 2019, Cisco Systems, Inc.
+ *
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution or at
+ * https://github.com/cisco/libacvp/LICENSE
  */
-/*****************************************************************************
-* Copyright (c) 2016, Cisco Systems, Inc.
-* All rights reserved.
 
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*
-* 1. Redistributions of source code must retain the above copyright notice,
-*    this list of conditions and the following disclaimer.
-*
-* 2. Redistributions in binary form must reproduce the above copyright notice,
-*    this list of conditions and the following disclaimer in the documentation
-*    and/or other materials provided with the distribution.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-* USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*****************************************************************************/
-#ifndef app_lcl_h
-#define app_lcl_h
+#ifndef LIBACVP_APP_LCL_H
+#define LIBACVP_APP_LCL_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-#ifdef ACVP_NO_RUNTIME
-#include <openssl/fipssyms.h>
-#include <openssl/fips_rand.h>
-#include <openssl/fips.h>
+
+#include "acvp/acvp.h"
 
 /*
- * TODO: These need to be put in fips.h
- * These are here so that the app knows about
- * the FOM specific API's being used
+ * MACROS
  */
-void FIPS_cipher_ctx_init(EVP_CIPHER_CTX *ctx);
-const EVP_CIPHER *FIPS_evp_aes_128_wrap(void);
-const EVP_CIPHER *FIPS_evp_aes_192_wrap(void);
-const EVP_CIPHER *FIPS_evp_aes_256_wrap(void);
-void FIPS_md_ctx_init(EVP_MD_CTX *ctx);
-int FIPS_cipher_ctx_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr);
-void FIPS_hmac_ctx_init(HMAC_CTX *ctx);
-CMAC_CTX *FIPS_cmac_ctx_new(void);
-BIGNUM *FIPS_bn_new(void);
-void FIPS_bn_free(BIGNUM *a);
-int fips_BN_hex2bn(BIGNUM **bn, const char *a);
-char *fips_BN_bn2hex(const BIGNUM *a);
-int fips_bn_set_word(BIGNUM *a, BN_ULONG w);
-int rsa_generate_key_internal(BIGNUM **p, BIGNUM **q, BIGNUM **n, BIGNUM **d,
-                              void *seed, unsigned int seed_len,
-                              unsigned int bitlen1, unsigned int bitlen2,
-                              unsigned int bitlen3, unsigned int bitlen4,
-                              BIGNUM *e_value, unsigned int nlen, BN_GENCB *cb);
-int RSA_X931_generate_key_ex(RSA *rsa, int bits, const BIGNUM *e, BN_GENCB *cb);
-int RSA_size(const RSA *r);
+#define DEFAULT_SERVER "127.0.0.1"
+#define DEFAULT_SERVER_LEN 9
+#define DEFAULT_PORT 443
+#define DEFAULT_URI_PREFIX "/acvp/v1/"
+#define JSON_FILENAME_LENGTH 128
+#define JSON_STRING_LENGTH 32
+#define JSON_REQUEST_LENGTH 128
 
-static int no_err;
-static void put_err_cb(int lib, int func,int reason,const char *file,int line)
-	{
-	if (no_err)
-		return;
-	fprintf(stderr, "ERROR:%08lX:lib=%d,func=%d,reason=%d"
-				":file=%s:line=%d\n",
-			ERR_PACK(lib, func, reason),
-			lib, func, reason, file, line);
-	}
+char value[JSON_STRING_LENGTH];
 
-static void add_err_cb(int num, va_list args)
-	{
-	int i;
-	char *str;
-	if (no_err)
-		return;
-	fputs("\t", stderr);
-	for (i = 0; i < num; i++)
-		{
-		str = va_arg(args, char *);
-		if (str)
-			fputs(str, stderr);
-		}
-	fputs("\n", stderr);
-	}
+typedef struct app_config {
+    ACVP_LOG_LVL level;
+    int sample;
+    int manual_reg;
+    int vector_req;
+    int vector_rsp;
+    int vector_upload;
+    int get;
+    int get_results;
+    int resume_session;
+    int post;
+    int put;
+    int kat;
+    int empty_alg;
+    int fips_validation;
+    int get_expected;
+    int save_to;
+    char reg_file[JSON_FILENAME_LENGTH + 1];
+    char vector_req_file[JSON_FILENAME_LENGTH + 1];
+    char vector_rsp_file[JSON_FILENAME_LENGTH + 1];
+    char vector_upload_file[JSON_FILENAME_LENGTH + 1];
+    char get_string[JSON_REQUEST_LENGTH + 1];
+    char session_file[JSON_FILENAME_LENGTH + 1];
+    char post_filename[JSON_FILENAME_LENGTH + 1];
+    char put_filename[JSON_FILENAME_LENGTH + 1];
+    char kat_file[JSON_FILENAME_LENGTH + 1];
+    char validation_metadata_file[JSON_FILENAME_LENGTH + 1];
+    char save_file[JSON_FILENAME_LENGTH + 1];
 
-static unsigned char dummy_entropy[1024];
+    /*
+     * Algorithm Flags
+     * 0 is off, 1 is on
+     */
+    int aes; int tdes;
+    int hash; int cmac;
+    int hmac;
+    /* These require the fom */
+    int dsa; int rsa;
+    int drbg; int ecdsa;
+    int kas_ecc; int kas_ffc; int kas_ifc; int kts_ifc;
+    int kdf;
+} APP_CONFIG;
 
-static size_t dummy_cb(DRBG_CTX *ctx, unsigned char **pout,
-                                int entropy, size_t min_len, size_t max_len)
-	{
-	*pout = dummy_entropy;
-	return min_len;
-	}
 
-static int entropy_stick = 0;
+int ingest_cli(APP_CONFIG *cfg, int argc, char **argv);
+int app_setup_two_factor_auth(ACVP_CTX *ctx);
 
-static void fips_algtest_init_nofips(void)
-	{
-	DRBG_CTX *ctx;
-	size_t i;
-	FIPS_set_error_callbacks(put_err_cb, add_err_cb);
-	for (i = 0; i < sizeof(dummy_entropy); i++)
-		dummy_entropy[i] = i & 0xff;
-	if (entropy_stick)
-		memcpy(dummy_entropy + 32, dummy_entropy + 16, 16);
-	ctx = FIPS_get_default_drbg();
-	FIPS_drbg_init(ctx, NID_aes_256_ctr, DRBG_FLAG_CTR_USE_DF);
-	FIPS_drbg_set_callbacks(ctx, dummy_cb, 0, 16, dummy_cb, 0);
-	FIPS_drbg_instantiate(ctx, dummy_entropy, 10);
-	FIPS_rand_set_method(FIPS_drbg_method());
-	}
+void app_aes_cleanup(void);
+void app_des_cleanup(void);
 
+int app_aes_handler(ACVP_TEST_CASE *test_case);
+int app_aes_handler_aead(ACVP_TEST_CASE *test_case);
+int app_aes_keywrap_handler(ACVP_TEST_CASE *test_case);
+int app_des_handler(ACVP_TEST_CASE *test_case);
+int app_sha_handler(ACVP_TEST_CASE *test_case);
+int app_hmac_handler(ACVP_TEST_CASE *test_case);
+int app_cmac_handler(ACVP_TEST_CASE *test_case);
+
+#define ENGID1 "800002B805123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456"
+#define ENGID2 "000002b87766554433221100"
+
+int app_kdf135_tls_handler(ACVP_TEST_CASE *test_case);
+int app_kdf135_snmp_handler(ACVP_TEST_CASE *test_case);
+int app_kdf135_ssh_handler(ACVP_TEST_CASE *test_case);
+int app_kdf135_srtp_handler(ACVP_TEST_CASE *test_case);
+int app_kdf135_ikev2_handler(ACVP_TEST_CASE *test_case);
+int app_kdf108_handler(ACVP_TEST_CASE *test_case);
+int app_kdf135_ikev1_handler(ACVP_TEST_CASE *test_case);
+int app_kdf135_x963_handler(ACVP_TEST_CASE *test_case);
+int app_pbkdf_handler(ACVP_TEST_CASE *test_case);
+
+void app_dsa_cleanup(void);
+void app_rsa_cleanup(void);
+void app_ecdsa_cleanup(void);
+
+int app_dsa_handler(ACVP_TEST_CASE *test_case);
+int app_kas_ecc_handler(ACVP_TEST_CASE *test_case);
+int app_kas_ffc_handler(ACVP_TEST_CASE *test_case);
+int app_kas_ifc_handler(ACVP_TEST_CASE *test_case);
+int app_kts_ifc_handler(ACVP_TEST_CASE *test_case);
+int app_rsa_keygen_handler(ACVP_TEST_CASE *test_case);
+int app_rsa_sig_handler(ACVP_TEST_CASE *test_case);
+int app_rsa_decprim_handler(ACVP_TEST_CASE *test_case);
+int app_rsa_sigprim_handler(ACVP_TEST_CASE *test_case);
+int app_ecdsa_handler(ACVP_TEST_CASE *test_case);
+int app_drbg_handler(ACVP_TEST_CASE *test_case);
+
+#ifdef __cplusplus
+}
 #endif
 
-#endif
+#endif // LIBACVP_APP_LCL_H
+
